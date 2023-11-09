@@ -1,0 +1,3 @@
+[submodule "jaeger-lab/images/jaeger-idl"]
+	path = jaeger-lab/images/jaeger-idl
+	url = https://github.com/jaegertracing/jaeger-idl.git
