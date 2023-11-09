@@ -1,0 +1,6 @@
+{
+	"options" : {
+		"generate .png file": true,
+		"generate .svg file": true,
+    }
+}
