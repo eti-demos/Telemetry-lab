@@ -38,5 +38,14 @@ grpcurl -plaintext -proto jaeger_query_proto/query.proto -import-path ./jaeger_q
 The second relpy of [ref](https://stackoverflow.com/questions/51785812/how-to-configure-jaeger-with-elasticsearch)
 
 # Replace Application by envoy!! 
+Extended elasticsearch setup with envoy filter. with OTEL tracing provider
+config
+
+The diagram of the setup: 
+
+
+Envoy -> helloworld
+  |
+  -----> jaeger-collector 
 
 
