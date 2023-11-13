@@ -7,6 +7,8 @@ services:
       - "10000:10000"
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
+    networks:
+      - elastic-jaeger
   
   helloworld:
     build: helloworldapp/
