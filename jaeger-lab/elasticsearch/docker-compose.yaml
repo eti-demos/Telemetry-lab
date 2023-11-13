@@ -1,8 +1,28 @@
-version: '3.8'
+version: "3"
 
-services: 
+services:
+  suggestions-microservice:
+    build: ../apps/suggestions/.
+    env_file:
+      - ../apps/suggestions/.env.docker
+    ports:
+      - "8002:8002"
+    networks:
+      - elastic-jaeger
+
+  articles-microservice:
+    build: ../apps/articles/.
+    env_file:
+      - ../apps/articles/.env.docker
+    ports:
+      - "8001:8001"
+    networks: 
+      - elastic-jaeger
+    depends_on:
+      - suggestions-microservice
+
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.3.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
     networks:
       - elastic-jaeger
     ports:
@@ -25,25 +45,27 @@ services:
       - "14269:14269"
       - "14268:14268"
       - "14267:14267"
+      - "14250:14250"
       - "9411:9411"
     networks:
-      - elastic-jaeger
+      elastic-jaeger: 
+        aliases:
+          - jaeger
     restart: on-failure
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
-    command: [
-      "--es.server-urls=http://elasticsearch:9200",
-      "--es.num-shards=1",
-      "--es.num-replicas=0",
-      "--log-level=error",
-    ]
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--es.num-shards=1"
+      - "--es.num-replicas=0"
+      - "--log-level=error"
     depends_on:
       - elasticsearch
 
   jaeger-agent:
     image: jaegertracing/jaeger-agent
     hostname: jaeger-agent
-    command: ["--collector.host-port=jaeger-collector:14267"]
+    command: ["--reporter.grpc.host-port=jaeger-collector:14250"]
     ports:
       - "5775:5775/udp"
       - "6831:6831/udp"
@@ -68,11 +90,10 @@ services:
     networks:
       - elastic-jaeger
     restart: on-failure
-    command: [
-      "--es.server-urls=http://elasticsearch:9200",
-      "--span-storage.type=elasticsearch",
-      "--log-level=debug"
-    ]
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--span-storage.type=elasticsearch"
+    
     depends_on:
       - jaeger-agent
 
@@ -83,3 +104,5 @@ volumes:
 networks:
   elastic-jaeger:
     driver: bridge 
+
+
