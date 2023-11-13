@@ -32,5 +32,11 @@ grpcurl -plaintext -proto jaeger_query_proto/query.proto -import-path ./jaeger_q
     }
 }' 127.0.0.1:16685 jaeger.api_v2.QueryService/FindTraces 
 ```
-# gRPC wireshark: https://grpc.io/blog/wireshark/ 
+### gRPC wireshark: https://grpc.io/blog/wireshark/ 
+
+# ElasticSearch 
+The second relpy of [ref](https://stackoverflow.com/questions/51785812/how-to-configure-jaeger-with-elasticsearch)
+
+# Replace Application by envoy!! 
+
 
