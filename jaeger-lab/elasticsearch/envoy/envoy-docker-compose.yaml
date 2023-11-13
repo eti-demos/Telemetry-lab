@@ -7,27 +7,34 @@ services:
       - "10000:10000"
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-
-
-  suggestions-microservice:
-    build: ../apps/suggestions/.
-    env_file:
-      - ../apps/suggestions/.env.docker
-    ports:
+  
+  helloworld:
+    build: helloworldapp/
+    ports: 
       - "8002:8002"
     networks:
       - elastic-jaeger
 
-  articles-microservice:
-    build: ../apps/articles/.
-    env_file:
-      - ../apps/articles/.env.docker
-    ports:
-      - "8001:8001"
-    networks: 
-      - elastic-jaeger
-    depends_on:
-      - suggestions-microservice
+
+  # suggestions-microservice:
+  #   build: ../apps/suggestions/.
+  #   env_file:
+  #     - ../apps/suggestions/.env.docker
+  #   ports:
+  #     - "8002:8002"
+  #   networks:
+  #     - elastic-jaeger
+  #
+  # articles-microservice:
+  #   build: ../apps/articles/.
+  #   env_file:
+  #     - ../apps/articles/.env.docker
+  #   ports:
+  #     - "8001:8001"
+  #   networks: 
+  #     - elastic-jaeger
+  #   depends_on:
+  #     - suggestions-microservice
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
