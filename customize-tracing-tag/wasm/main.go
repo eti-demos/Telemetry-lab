@@ -15,8 +15,6 @@
 package main
 
 import (
-	"math/rand"
-	"time"
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -36,34 +34,19 @@ type vmContext struct {
 
 // Override types.DefaultVMContext.
 func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
-	return &helloWorld{}
+	proxywasm.LogWarnf("New plugin Contxt is created")
+	return &pluginContext{}
 }
 
-type helloWorld struct {
+type pluginContext struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
 	contextID uint32
 }
 
-// Override types.DefaultPluginContext.
-func (ctx *helloWorld) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
-	rand.Seed(time.Now().UnixNano())
 
-	proxywasm.LogWarn("OnPluginStart from Go!")
-	if err := proxywasm.SetTickPeriodMilliSeconds(tickMilliseconds); err != nil {
-		proxywasm.LogCriticalf("failed to set tick period: %v", err)
-	}
-
-	return types.OnPluginStartStatusOK
+func (*pluginContext) NewHttpContext(uint32) types.HttpContext { 
+	proxywasm.LogWarnf("New HTTP Contxt is created")
+    return &types.DefaultHttpContext{} 
 }
-
-// Override types.DefaultPluginContext.
-func (ctx *helloWorld) OnTick() {
-	t := time.Now().UnixNano()
-	proxywasm.LogWarnf("It's %d: random value: %d", t, rand.Uint64())
-	proxywasm.LogWarnf("OnTick called")
-}
-
-// Override types.DefaultPluginContext.
-func (*helloWorld) NewHttpContext(uint32) types.HttpContext { return &types.DefaultHttpContext{} }
