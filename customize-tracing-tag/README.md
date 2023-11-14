@@ -1,4 +1,6 @@
-[ref](https://www.envoyproxy.io/docs/envoy/v1.28.0/api-v3/type/tracing/v3/custom_tag.proto) 
+[envoy ref](https://www.envoyproxy.io/docs/envoy/v1.28.0/api-v3/type/tracing/v3/custom_tag.proto) 
+[Istio customize
+ref](https://istio.io/latest/docs/tasks/observability/distributed-tracing/mesh-and-proxy-config/#customizing-tracing-tags)
 
 Describe custom tags for active span.
 
@@ -8,7 +10,7 @@ Describe custom tags for active span.
   "literal": {...},
   "environment": {...},
   "request_header": {...},
-  "metadata": {...}
+  "metadata": {...} # it seems that it's to configure envoy filter 
 }
 ```
 
@@ -19,6 +21,7 @@ tag value
 - metadata: Metadata type custom tag using `MetadataKey` to retrieve the protobuf
 value from Metadata, and populate the tag value with the canonical JSON
 representation of it. 
+How to configure? 
 
 ```cosole
 curl -H "customtag: hello john" localhost:10000

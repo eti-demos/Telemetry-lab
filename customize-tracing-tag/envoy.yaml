@@ -22,9 +22,9 @@ static_resources:
                   default_value: customtag_env
               - tag: custom-tag-metadata
                 metadata: 
-                  "kind":
-                  "metadata_key":
-                  "default_value": 
+                  kind: 
+                  metadata_key:
+                  default_value: 
 
             provider:
               name: envoy.tracers.opentelemetry
