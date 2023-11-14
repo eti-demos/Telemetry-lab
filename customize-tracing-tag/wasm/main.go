@@ -42,11 +42,26 @@ type pluginContext struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	contextID uint32
 }
 
 
 func (*pluginContext) NewHttpContext(uint32) types.HttpContext { 
 	proxywasm.LogWarnf("New HTTP Contxt is created")
-    return &types.DefaultHttpContext{} 
+    return &httpContext{} 
 }
+
+type httpContext struct{
+    types.DefaultHttpContext
+}
+
+func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+    number_str, err :=proxywasm.GetHttpRequestHeader("Number")
+    if err != nil {
+        proxywasm.LogWarnf("Error while retriving the value of hearder Number")
+    }
+    proxywasm.LogWarnf("The Number header value is %s", number_str)
+
+    return types.ActionContinue
+
+}
+
