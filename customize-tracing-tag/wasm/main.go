@@ -21,6 +21,7 @@ import (
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+    "strconv"
 )
 
 func main() {
@@ -99,49 +100,57 @@ type httpHeaders struct {
 
 // Override types.DefaultHttpContext.
 func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-	err := proxywasm.ReplaceHttpRequestHeader("test", "best")
+    number_str, err := proxywasm.GetHttpRequestHeader("nubmer")
 	if err != nil {
-		proxywasm.LogCritical("failed to set request header: test")
+		proxywasm.LogCritical("Problem happen while retrive the value of number")
+        return types.ActionContinue
 	}
+    number_int, err := strconv.Atoi(number_str)
+    if err != nil {
+        proxywasm.LogCritical("Number isn't not a number")
+        return types.ActionContinue
+    }
 
-	hs, err := proxywasm.GetHttpRequestHeaders()
-	if err != nil {
-		proxywasm.LogCriticalf("failed to get request headers: %v", err)
-	}
 
-	for _, h := range hs {
-		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
-	}
+    if number_int < 10 {
+        proxywasm.AddHttpRequestHeader("number_size", "small")
+    }else{
+        proxywasm.AddHttpRequestHeader("number_size", "big")
+    }
+
+    // for _, h := range hs {
+	// 	proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
+	// }
 	return types.ActionContinue
 }
 
 // Override types.DefaultHttpContext.
-func (ctx *httpHeaders) OnHttpResponseHeaders(_ int, _ bool) types.Action {
-	proxywasm.LogInfof("adding header: %s=%s", ctx.headerName, ctx.headerValue)
-
-	// Add a hardcoded header
-	if err := proxywasm.AddHttpResponseHeader("x-proxy-wasm-go-sdk-example", "http_headers"); err != nil {
-		proxywasm.LogCriticalf("failed to set response constant header: %v", err)
-	}
-
-	// Add the header passed by arguments
-	if ctx.headerName != "" {
-		if err := proxywasm.AddHttpResponseHeader(ctx.headerName, ctx.headerValue); err != nil {
-			proxywasm.LogCriticalf("failed to set response headers: %v", err)
-		}
-	}
-
-	// Get and log the headers
-	hs, err := proxywasm.GetHttpResponseHeaders()
-	if err != nil {
-		proxywasm.LogCriticalf("failed to get response headers: %v", err)
-	}
-
-	for _, h := range hs {
-		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
-	}
-	return types.ActionContinue
-}
+// func (ctx *httpHeaders) OnHttpResponseHeaders(_ int, _ bool) types.Action {
+// 	proxywasm.LogInfof("adding header: %s=%s", ctx.headerName, ctx.headerValue)
+//
+// 	// Add a hardcoded header
+// 	if err := proxywasm.AddHttpResponseHeader("x-proxy-wasm-go-sdk-example", "http_headers"); err != nil {
+// 		proxywasm.LogCriticalf("failed to set response constant header: %v", err)
+// 	}
+//
+// 	// Add the header passed by arguments
+// 	if ctx.headerName != "" {
+// 		if err := proxywasm.AddHttpResponseHeader(ctx.headerName, ctx.headerValue); err != nil {
+// 			proxywasm.LogCriticalf("failed to set response headers: %v", err)
+// 		}
+// 	}
+//
+// 	// Get and log the headers
+// 	hs, err := proxywasm.GetHttpResponseHeaders()
+// 	if err != nil {
+// 		proxywasm.LogCriticalf("failed to get response headers: %v", err)
+// 	}
+//
+// 	for _, h := range hs {
+// 		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
+// 	}
+// 	return types.ActionContinue
+// }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpHeaders) OnHttpStreamDone() {

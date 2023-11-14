@@ -2,41 +2,34 @@ goimports := golang.org/x/tools/cmd/goimports@v0.7.0
 golangci_lint := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 
 
-.PHONY: build.example
-build.example:
-	@find ./examples -type f -name "main.go" | grep ${name}\
-	| xargs -I {} bash -c 'dirname {}' \
-	| xargs -I {} bash -c 'cd {} && tinygo build -o main.wasm -scheduler=none -target=wasi ./main.go'
+.PHONY: build
+build:
+	tinygo build -o main.wasm -scheduler=none -target=wasi ./main.go
 
 
-.PHONY: build.examples
-build.examples:
-	@find ./examples -mindepth 1 -type f -name "main.go" \
-	| xargs -I {} bash -c 'dirname {}' \
-	| xargs -I {} bash -c 'cd {} && tinygo build -o main.wasm -scheduler=none -target=wasi ./main.go'
 
-.PHONY: test
-test:
-	@go test $(shell go list ./... | grep -v e2e)
-	@go test -tags "proxywasm_timing" ./proxywasm/proxytest
-
-.PHONY: test.examples
-test.examples:
-	@find ./examples -mindepth 1 -type f -name "main.go" \
-	| xargs -I {} bash -c 'dirname {}' \
-	| xargs -I {} bash -c 'cd {} && go test ./...'
-
-.PHONY: test.e2e
-test.e2e:
-	@go test -v ./e2e -count=1
-
-.PHONY: test.e2e.single
-test.e2e.single:
-	@go test -v ./e2e -run '/${name}' -count=1
-
-.PHONY: run
-run:
-	@envoy -c ./examples/${name}/envoy.yaml --concurrency 2 --log-format '%v'
+# .PHONY: test
+# test:
+# 	@go test $(shell go list ./... | grep -v e2e)
+# 	@go test -tags "proxywasm_timing" ./proxywasm/proxytest
+#
+# .PHONY: test.examples
+# test.examples:
+# 	@find ./examples -mindepth 1 -type f -name "main.go" \
+# 	| xargs -I {} bash -c 'dirname {}' \
+# 	| xargs -I {} bash -c 'cd {} && go test ./...'
+#
+# .PHONY: test.e2e
+# test.e2e:
+# 	@go test -v ./e2e -count=1
+#
+# .PHONY: test.e2e.single
+# test.e2e.single:
+# 	@go test -v ./e2e -run '/${name}' -count=1
+#
+# .PHONY: run
+# run:
+# 	@envoy -c ./examples/${name}/envoy.yaml --concurrency 2 --log-format '%v'
 
 .PHONY: lint
 lint:
