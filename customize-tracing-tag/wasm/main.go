@@ -15,6 +15,7 @@
 package main
 
 import (
+    "strconv"
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -58,8 +59,19 @@ func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) typ
     number_str, err :=proxywasm.GetHttpRequestHeader("Number")
     if err != nil {
         proxywasm.LogWarnf("Error while retriving the value of hearder Number")
+        return types.ActionContinue
     }
     proxywasm.LogWarnf("The Number header value is %s", number_str)
+
+    number_int, _ := strconv.Atoi(number_str)
+    proxywasm.RemoveHttpRequestHeader("Number")
+    if number_int > 10 {
+        proxywasm.LogWarnf("Number is bigger then 10")
+        proxywasm.AddHttpRequestHeader("Number-Size", "big") 
+    } else{
+        proxywasm.LogWarnf("Number is smaller then 10")
+        proxywasm.AddHttpRequestHeader("Number-Size", "small") 
+    }
 
     return types.ActionContinue
 

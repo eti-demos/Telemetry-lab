@@ -17,6 +17,10 @@ static_resources:
                   name: customtag_header
                   default_value: customtag_header
               - tag: number-size
+                request_header: 
+                  name: Number-Size
+                  default_value: NaN
+              - tag: number-size
                 request_header:
                   name: number_size
                   default_value: NaN
