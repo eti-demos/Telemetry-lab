@@ -29,3 +29,11 @@ How to configure?
 curl -H "customtag: hello john" localhost:10000
 ```
 
+WASM filter is able to modify the input header and the tracer can successfully
+export the tracing value to jaeger
+
+eg: 
+- Number header is removed -> NaN
+- Number-size is added -> big/small
+
+

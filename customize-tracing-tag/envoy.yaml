@@ -20,9 +20,9 @@ static_resources:
                 request_header: 
                   name: Number-Size
                   default_value: NaN
-              - tag: number-size
+              - tag: Number
                 request_header:
-                  name: number_size
+                  name: Number
                   default_value: NaN
               - tag: custom-tag-env
                 environment:
