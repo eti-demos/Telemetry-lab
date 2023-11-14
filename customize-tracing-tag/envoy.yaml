@@ -14,9 +14,18 @@ static_resources:
             custom_tags:
               - tag: custom-tag-header
                 request_header: 
-                  name: customtag
+                  name: customtag_header
                   default_value: customtag_header
-              - tag: 
+              - tag: custom-tag-env
+                environment:
+                  name: CUSTOMTAG_ENV
+                  default_value: customtag_env
+              - tag: custom-tag-metadata
+                metadata: 
+                  "kind":
+                  "metadata_key":
+                  "default_value": 
+
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
