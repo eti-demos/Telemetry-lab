@@ -11,13 +11,19 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           tracing:
+            custom_tags:
+              - tag: custom-tag-header
+                request_header: 
+                  name: customtag
+                  default_value: customtag_header
+              - tag: 
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
                 "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpc_service:
                   envoy_grpc:
-                    cluster_name: jaeger-collector
+                    cluster_name: jaeger
                   timeout: 0.250s
                 service_name: helloworld-svc
           codec_type: AUTO
@@ -53,7 +59,7 @@ static_resources:
                 address: helloworld
                 port_value: 8002
 
-  - name: jaeger-collector
+  - name: jaeger
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -62,12 +68,12 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: jaeger-collector
+      cluster_name: jaeger
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: jaeger-collector
+                address: jaeger
                 port_value: 4317
 

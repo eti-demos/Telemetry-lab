@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  envoy:
+    image: envoyproxy/envoy:dev-8d267ca634a21eb6b6922caa18dc69317ef4f65f
+    ports:
+      - "10000:10000"
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+    networks:
+      - cust-envoy
+  
+  helloworld:
+    build: helloworldapp/
+    ports: 
+      - "8002:8002"
+    networks:
+      - cust-envoy
+
+  jaeger:
+    image: jaegertracing/opentelemetry-all-in-one:latest
+    ports:
+      - "16686:16686" # api
+      - "16685:16685" # jaeger-query service gRPC server
+      - "4317:4317" # grpc
+    networks:
+      - cust-envoy
+
+networks:
+  cust-envoy:
+    driver: bridge 
+
+
