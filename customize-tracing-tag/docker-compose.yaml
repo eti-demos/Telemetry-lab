@@ -5,8 +5,10 @@ services:
     image: envoyproxy/envoy:dev-8d267ca634a21eb6b6922caa18dc69317ef4f65f
     ports:
       - "10000:10000"
+      - "8001:8001"
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     environment:
       - CUSTOMTAG_ENV="hello env"
     networks:

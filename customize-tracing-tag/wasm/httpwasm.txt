@@ -16,11 +16,12 @@ package main
 
 import (
 
+	"github.com/tidwall/gjson"
+
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+    "strconv"
 )
-
-const tickMilliseconds uint32 = 1000
 
 func main() {
 	proxywasm.SetVMContext(&vmContext{})
@@ -34,57 +35,62 @@ type vmContext struct {
 
 // Override types.DefaultVMContext.
 func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
-	proxywasm.LogWarn("New Plugin!")
-
-	return &pluginContext{
-        contextID: contextID,
-    }
+	return &pluginContext{}
 }
 
 type pluginContext struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	contextID uint32
+
 }
 
 // Override types.DefaultPluginContext.
-// func (ctx *pluginContext) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
-	// rand.Seed(time.Now().UnixNano())
-	// proxywasm.LogWarn("OnPluginStart from Go!")
-	// if err := proxywasm.SetTickPeriodMilliSeconds(tickMilliseconds); err != nil {
-	// 	proxywasm.LogCriticalf("failed to set tick period: %v", err)
-	// }
-
-	// return types.OnPluginStartStatusOK
-// }
-// Override types.DefaultPluginContext.
-// func (ctx *pluginContext) OnTick() {
-// 	t := time.Now().UnixNano()
-// 	proxywasm.LogWarnf("It's %d: random value: %d", t, rand.Uint64())
-// 	proxywasm.LogWarnf("OnTick called")
-// }
-
-func (*pluginContext) NewHttpContext(contextID uint32) types.HttpContext { 
-	proxywasm.LogWarnf("Creat new Http Context")
-    return &httpContext{
-        contextID: contextID,
-    } 
+func (p *pluginContext) NewHttpContext(contextID uint32) types.HttpContext {
+    proxywasm.LogCritical("NewHttpContext")
+	return &httpHeaders{
+		contextID:   contextID,
+	}
 }
 
+func (p *pluginContext) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
 
-type httpContext struct {
+    proxywasm.LogCritical("PluginStart")
+
+	return types.OnPluginStartStatusOK
+}
+
+type httpHeaders struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
 	contextID   uint32
 }
 
-// func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-//     number_str, _ := proxywasm.GetHttpRequestHeader("Nubmer")
-// 	proxywasm.LogWarnf("Number header is", number_str)
-//
-// 	return types.ActionContinue
-//
-//
+
+// Override types.DefaultHttpContext.
+func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+    number_str, err := proxywasm.GetHttpRequestHeader("Nubmer")
+	if err != nil {
+		proxywasm.LogCritical("Problem happen while retrive the value of number")
+        return types.ActionContinue
+	}
+    number_int, err := strconv.Atoi(number_str)
+    if err != nil {
+        proxywasm.LogCritical("Number isn't not a number")
+        return types.ActionContinue
+    }
+
+    if number_int < 10 {
+        proxywasm.AddHttpRequestHeader("Number_size", "small")
+    }else{
+        proxywasm.AddHttpRequestHeader("Number_size", "big")
+    }
+	return types.ActionContinue
+}
+
+
+// Override types.DefaultHttpContext.
+// func (ctx *httpHeaders) OnHttpStreamDone() {
+// 	proxywasm.LogInfof("%d finished", ctx.contextID)
 // }

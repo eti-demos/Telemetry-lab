@@ -16,6 +16,10 @@ static_resources:
                 request_header: 
                   name: customtag_header
                   default_value: customtag_header
+              - tag: number-size
+                request_header:
+                  name: number_size
+                  default_value: NaN
               - tag: custom-tag-env
                 environment:
                   name: CUSTOMTAG_ENV
@@ -25,7 +29,6 @@ static_resources:
                   kind: 
                   metadata_key:
                   default_value: 
-
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
@@ -38,6 +41,17 @@ static_resources:
           codec_type: AUTO
           stat_prefix: ingress_http
           http_filters:
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              value:
+                config:
+                  vm_config:
+                    runtime: "envoy.wasm.runtime.v8"
+                    code:
+                      local:
+                        filename: "/etc/wasm/main.wasm"
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -86,3 +100,9 @@ static_resources:
                 address: jaeger
                 port_value: 4317
 
+admin:
+  # access_log_path: "/var/log/envoy/envoy-admin.log"
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 8001

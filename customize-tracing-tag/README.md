@@ -2,6 +2,8 @@
 [Istio customize
 ref](https://istio.io/latest/docs/tasks/observability/distributed-tracing/mesh-and-proxy-config/#customizing-tracing-tags)
 
+example of envo config https://gist.github.com/poolski/9318b70285379d884422b2419c0325c9
+
 Describe custom tags for active span.
 
 ```json
