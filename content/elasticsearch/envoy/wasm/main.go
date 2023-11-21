@@ -15,7 +15,7 @@
 package main
 
 import (
-    "strconv"
+    // "strconv"
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -56,24 +56,31 @@ type httpContext struct{
 }
 
 func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-    number_str, err :=proxywasm.GetHttpRequestHeader("Number")
+    // spanID, err :=proxywasm.GetHttpRequestHeader("Number")
+    // traceID, err :=proxywasm.GetHttpRequestHeader("Number")
+    hs, err := proxywasm.GetHttpRequestHeaders()
     if err != nil {
-        proxywasm.LogWarnf("Error while retriving the value of hearder Number")
-        return types.ActionContinue
-    }
-    proxywasm.LogWarnf("The Number header value is %s", number_str)
+		proxywasm.LogCriticalf("failed to get request headers: %v", err)
+	}
+    for _, h := range hs {
+		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
+	}
 
-    number_int, _ := strconv.Atoi(number_str)
-    proxywasm.RemoveHttpRequestHeader("Number")
-    if number_int > 10 {
-        proxywasm.LogWarnf("Number is bigger then 10")
-        proxywasm.AddHttpRequestHeader("Number-Size", "big") 
-    } else{
-        proxywasm.LogWarnf("Number is smaller then 10")
-        proxywasm.AddHttpRequestHeader("Number-Size", "small") 
-    }
-
+    // if err != nil {
+    //     proxywasm.LogWarnf("Error while retriving the value of hearder Number")
+    //     return types.ActionContinue
+    // }
+    // proxywasm.LogWarnf("The Number header value is %s", number_str)
+    //
+    // number_int, _ := strconv.Atoi(number_str)
+    // proxywasm.RemoveHttpRequestHeader("Number")
+    // if number_int > 10 {
+    //     proxywasm.LogWarnf("Number is bigger then 10")
+    //     proxywasm.AddHttpRequestHeader("Number-Size", "big") 
+    // } else{
+    //     proxywasm.LogWarnf("Number is smaller then 10")
+    //     proxywasm.AddHttpRequestHeader("Number-Size", "small") 
+    // }
     return types.ActionContinue
-
 }
 

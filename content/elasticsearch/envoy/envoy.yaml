@@ -11,35 +11,13 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           tracing:
-            custom_tags:
-              - tag: custom-tag-header
-                request_header: 
-                  name: customtag_header
-                  default_value: customtag_header
-              - tag: number-size
-                request_header: 
-                  name: Number-Size
-                  default_value: NaN
-              - tag: Number
-                request_header:
-                  name: Number
-                  default_value: NaN
-              - tag: custom-tag-env
-                environment:
-                  name: CUSTOMTAG_ENV
-                  default_value: customtag_env
-              # - tag: custom-tag-metadata
-              #   metadata: 
-              #     kind: 
-              #     metadata_key:
-              #     default_value: 
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
                 "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpc_service:
                   envoy_grpc:
-                    cluster_name: jaeger
+                    cluster_name: jaeger-collector
                   timeout: 0.250s
                 service_name: helloworld-svc
           codec_type: AUTO
@@ -86,7 +64,7 @@ static_resources:
                 address: helloworld
                 port_value: 8002
 
-  - name: jaeger
+  - name: jaeger-collector
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -95,14 +73,32 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: jaeger
+      cluster_name: jaeger-collector
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: jaeger
+                address: jaeger-collector
                 port_value: 4317
+
+  - name: elasticsearch
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: elasticsearch
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: elasticsearch
+                port_value: 9200
 
 admin:
   # access_log_path: "/var/log/envoy/envoy-admin.log"
