@@ -1,5 +1,3 @@
-Enable gRPC server of Jaeger-query.
-
 # About
 
 This repository contains source code with examples for [this](https://medium.com/adevinta-tech-blog/distributed-tracing-with-opentelemetry-in-your-go-python-microservices-1782cd0a1e77) article about Distributed tracing.
