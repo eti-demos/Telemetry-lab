@@ -25,11 +25,11 @@ The wasm filter do is modify the modify the value of `Number` and add
 - Number less than or equal 10 `Header-Size: small`
 - Number bigger then 10, `Header-Size: big`
 
-What happend if app send tracing data as well? 
 
 ```
 curl -H "Number: 10" 127.0.0.1:10000
 curl -H "Number: 11" 127.0.0.1:10000
 ```
 
+What happend if app send tracing data as well? 
 
