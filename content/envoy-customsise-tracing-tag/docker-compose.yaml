@@ -4,22 +4,21 @@ services:
   envoy:
     image: envoyproxy/envoy:dev-8d267ca634a21eb6b6922caa18dc69317ef4f65f
     ports:
-      - "10000:10000"
-      - "8001:8001"
+      - "10000:10000" # Inbound endpoint
+      - "8001:8001" # Admin interface
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ./wasm/main.wasm:/etc/wasm/main.wasm
     environment:
       - CUSTOMTAG_ENV="hello env"
     networks:
-      - cust-envoy
-  
+      - envoy-customising-tag
   helloworld:
     build: helloworldapp/
     ports: 
-      - "8002:8002"
+      - "8002:8002" # helloword is listen on the 
     networks:
-      - cust-envoy
+      - envoy-customising-tag
 
   jaeger:
     image: jaegertracing/opentelemetry-all-in-one:latest
@@ -28,10 +27,10 @@ services:
       - "16685:16685" # jaeger-query service gRPC server
       - "4317:4317" # grpc
     networks:
-      - cust-envoy
+      - envoy-customising-tag
 
 networks:
-  cust-envoy:
+  envoy-customising-tag:
     driver: bridge 
 
 
