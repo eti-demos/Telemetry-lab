@@ -64,7 +64,7 @@ services:
       - "14250:14250"
       - "9411:9411"
     networks:
-      - net-elasticsearch: 
+      - net-elasticsearch
     restart: on-failure
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
@@ -93,7 +93,7 @@ services:
     
     depends_on:
       - elasticsearch
-  #
+
 volumes:
   es7-17:
     driver: local
