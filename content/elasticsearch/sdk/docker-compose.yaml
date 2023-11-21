@@ -53,7 +53,7 @@ services:
       - xpack.security.enabled=false
       - INTERACTIVESETUP_ENABLED=false
     volumes:
-      - es7-17:/usr/share/elasticsearch/data
+      - essdk:/usr/share/elasticsearch/data
 
   jaeger-collector:
     image: jaegertracing/jaeger-collector
@@ -95,7 +95,7 @@ services:
       - elasticsearch
 
 volumes:
-  es7-17:
+  essdk:
     driver: local
 
 networks:
