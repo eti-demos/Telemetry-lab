@@ -1,17 +1,14 @@
 services:
+
   envoy-front-proxy:
     build:
       context: .
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-front-proxy.yaml
-    networks:
-      - zipkin-envoy
-    volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # jaeger:
-      #   condition: service_healthy
+      zipkin:
+        condition: service_healthy
       envoy-1:
         condition: service_started
       envoy-2:
@@ -25,13 +22,9 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-1.yaml
-    networks:
-      - zipkin-envoy
-    volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # jaeger:
-      #   condition: service_healthy
+      zipkin:
+        condition: service_healthy
       service-1:
         condition: service_healthy
       envoy-2:
@@ -43,13 +36,9 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-2.yaml
-    networks:
-      - zipkin-envoy
-    volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # jaeger:
-      #   condition: service_healthy
+      zipkin:
+        condition: service_healthy
       service-2:
         condition: service_healthy
 
@@ -57,8 +46,6 @@ services:
     build:
       context: ../shared/python
       target: aiohttp-tracing-service
-    networks:
-      - zipkin-envoy
     environment:
     - SERVICE_NAME=1
 
@@ -66,89 +53,12 @@ services:
     build:
       context: ../shared/python
       target: aiohttp-tracing-service
-    networks:
-      - zipkin-envoy
     environment:
     - SERVICE_NAME=2
 
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:7.17.15
-  #   networks:
-  #     - zipkin-envoy
-  #   restart: on-failure
-  #   ports:
-  #     - "127.0.0.1:5601:5601"
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #     - XPACK_SECURITY_ENABLED=false
-  #     - INTERACTIVESETUP_ENABLED=false
-  #   depends_on:
-  #     - elasticsearch
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
-    networks:
-      - zipkin-envoy
+  zipkin:
+    build:
+      context: .
+      dockerfile: Dockerfile-zipkin
     ports:
-      - "127.0.0.1:9200:9200"
-      - "127.0.0.1:9300:9300"
-    restart: on-failure
-    environment:
-      - cluster.name=jaeger-cluster
-      - discovery.type=single-node
-      - http.host=0.0.0.0
-      - transport.host=127.0.0.1
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - xpack.security.enabled=false
-      - INTERACTIVESETUP_ENABLED=false
-    volumes:
-      - esenvoy-zipkin:/usr/share/elasticsearch/data
-
-  jaeger-collector:
-    image: jaegertracing/jaeger-collector
-    ports:
-      - "14269:14269"
-      - "14268:14268"
-      - "14267:14267"
-      - "14250:14250"
-      - "9411:9411"
-    networks:
-      - zipkin-envoy
-    restart: on-failure
-    environment:
-      - SPAN_STORAGE_TYPE=elasticsearch
-    command: 
-      - "--es.server-urls=http://elasticsearch:9200"
-      - "--es.num-shards=1"
-      - "--es.num-replicas=0"
-      - "--log-level=error"
-      - "--collector.zipkin.host-port=:9411"
-      - "--collector.zipkin.keep-alive"
-    depends_on:
-      - elasticsearch
-
-  jaeger-query:
-    image: jaegertracing/jaeger-query
-    environment:
-      - SPAN_STORAGE_TYPE=elasticsearch
-      - no_proxy=localhost
-    ports:
-      - "16686:16686"
-      - "16687:16687"
-    networks:
-      - zipkin-envoy
-    restart: on-failure
-    command: 
-      - "--es.server-urls=http://elasticsearch:9200"
-      - "--span-storage.type=elasticsearch"
-    
-    depends_on:
-      - elasticsearch
-
-volumes:
-  esenvoy-zipkin:
-    driver: local
-
-networks:
-  zipkin-envoy:
-    driver: bridge
+    - "${PORT_UI:-9411}:9411"

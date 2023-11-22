@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
-export NAME=opentelemetry
-export PORT_PROXY="${OPENTELEMETRY_PORT_PROXY:-12000}"
-export PORT_UI="${OPENTELEMETRY_PORT_UI:-12001}"
+export NAME=zipkin
+export PORT_PROXY="${ZIPKIN_PORT_PROXY:-12600}"
+export PORT_UI="${ZIPKIN_PORT_UI:-12601}"
 
 # shellcheck source=examples/verify-common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../verify-common.sh"
@@ -17,7 +17,7 @@ responds_with \
     "Hello from behind Envoy (service 2)!" \
     "http://localhost:${PORT_PROXY}/trace/2"
 
-run_log "View the traces in OpenTelemetry UI"
+run_log "View the traces in Zipkin UI"
 responds_with \
-    "<!DOCTYPE html>" \
-    "http://localhost:${PORT_UI}/debug/tracez"
+    "<!doctype html>" \
+    "http://localhost:${PORT_UI}/zipkin/"

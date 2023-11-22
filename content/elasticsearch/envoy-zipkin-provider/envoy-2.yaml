@@ -1,5 +1,9 @@
 # This proxy listens on port 10000 and routes all queries to `service-2`.
 
+node:
+  # The cluster name is used by Zipkin to identify the proxy.
+  cluster: envoy-proxy-2
+
 static_resources:
   listeners:
   - address:
@@ -12,47 +16,20 @@ static_resources:
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          # ---------------------
-          # Tracing configuration 
-          # ---------------------
           tracing:
             provider:
               name: envoy.tracers.zipkin
               typed_config:
                 "@type": type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
-                collector_cluster: jaeger-collector
+                collector_cluster: zipkin
                 collector_endpoint: "/api/v2/spans"
                 collector_endpoint_version: HTTP_JSON
-
           codec_type: AUTO
           stat_prefix: ingress_http
-          # -------------------
-          # HTTP filters chain 
-          # -------------------
           http_filters:
-          # ----------
-          # WASM filter
-          # -----------
-          - name: envoy.filters.http.wasm
-            typed_config:
-              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-              type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
-              value:
-                config:
-                  vm_config:
-                    runtime: "envoy.wasm.runtime.v8"
-                    code:
-                      local:
-                        filename: "/etc/wasm/main.wasm"
-          # --------------
-          # Routing filter
-          # --------------
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          # --------------
-          # Routing config
-          # --------------
           route_config:
             name: service2_route
             virtual_hosts:
@@ -80,20 +57,15 @@ static_resources:
               socket_address:
                 address: service-2
                 port_value: 8080
-  - name: jaeger-collector
+  - name: zipkin
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
-    typed_extension_protocol_options:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicit_http_config:
-          http2_protocol_options: {}
     load_assignment:
-      cluster_name: jaeger-collector
+      cluster_name: zipkin
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: jaeger-collector
+                address: zipkin
                 port_value: 9411
