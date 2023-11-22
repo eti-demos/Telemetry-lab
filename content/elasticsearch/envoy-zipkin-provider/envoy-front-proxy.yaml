@@ -1,0 +1,123 @@
+# This proxy listens on port 10000, and routes the following paths:
+#
+#   /trace/1 -> routes to `envoy-1` on port 10000
+#   /trace/2 -> routes to `envoy-1` on port 10001 (for onward routing to `envoy-2`)
+
+static_resources:
+  listeners:
+  - address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 10000
+    traffic_direction: OUTBOUND
+    filter_chains:
+    - filters:
+      # HTTP Connection manager
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          generate_request_id: true
+          # ---------------------
+          # Tracing configuration 
+          # ---------------------
+          tracing:
+            provider:
+              name: envoy.tracers.opentelemetry
+              typed_config:
+                "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                grpc_service:
+                  envoy_grpc:
+                    cluster_name: jaeger-collector
+                  timeout: 0.250s
+                service_name: front-envoy
+          codec_type: AUTO
+          stat_prefix: ingress_http
+          # -------------------
+          # HTTP filters chain 
+          # -------------------
+          http_filters:
+          # ----------
+          # WASM filter
+          # -----------
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              value:
+                config:
+                  vm_config:
+                    runtime: "envoy.wasm.runtime.v8"
+                    code:
+                      local:
+                        filename: "/etc/wasm/main.wasm"
+          # --------------
+          # Routing filter
+          # --------------
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          # --------------
+          # Routing config
+          # --------------
+          route_config:
+            name: proxy_routes
+            virtual_hosts:
+            - name: proxy
+              domains:
+              - "*"
+              routes:
+              - match:
+                  prefix: "/trace/1"
+                route:
+                  cluster: envoy_cluster1
+                decorator:
+                  operation: routeToEnvoy1
+              - match:
+                  prefix: "/trace/2"
+                route:
+                  cluster: envoy_cluster2
+                decorator:
+                  operation: routeToEnvoy2ViaEnvoy1
+
+  clusters:
+  - name: envoy_cluster1
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: envoy_cluster1
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: envoy-1
+                port_value: 10000
+  - name: envoy_cluster2
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: envoy_cluster2
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: envoy-1
+                port_value: 10001
+  - name: jaeger-collector
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: jaeger-collector
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: jaeger-collector
+                port_value: 4317
