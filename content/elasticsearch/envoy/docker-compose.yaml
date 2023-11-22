@@ -7,6 +7,8 @@ services:
         ENVOY_CONFIG: envoy-front-proxy.yaml
     networks:
       - otel-envoy
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
@@ -25,6 +27,8 @@ services:
         ENVOY_CONFIG: envoy-1.yaml
     networks:
       - otel-envoy
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
@@ -41,6 +45,8 @@ services:
         ENVOY_CONFIG: envoy-2.yaml
     networks:
       - otel-envoy
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
