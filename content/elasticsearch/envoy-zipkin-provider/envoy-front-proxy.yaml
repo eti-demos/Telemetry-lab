@@ -20,6 +20,9 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           generate_request_id: true
+          # ---------------------
+          # Tracing configuration 
+          # ---------------------
           tracing:
             provider:
               name: envoy.tracers.zipkin
@@ -30,7 +33,27 @@ static_resources:
                 collector_endpoint_version: HTTP_JSON
           codec_type: AUTO
           stat_prefix: ingress_http
+          # -------------------
+          # HTTP filters chain 
+          # -------------------
           http_filters:
+          # ----------
+          # WASM filter
+          # -----------
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              value:
+                config:
+                  vm_config:
+                    runtime: "envoy.wasm.runtime.v8"
+                    code:
+                      local:
+                        filename: "/etc/wasm/main.wasm"
+          # --------------
+          # Routing filter
+          # --------------
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

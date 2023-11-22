@@ -6,6 +6,8 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-front-proxy.yaml
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       zipkin:
         condition: service_healthy
@@ -22,6 +24,8 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-1.yaml
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       zipkin:
         condition: service_healthy
@@ -36,6 +40,8 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-2.yaml
+    volumes:
+      - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       zipkin:
         condition: service_healthy
