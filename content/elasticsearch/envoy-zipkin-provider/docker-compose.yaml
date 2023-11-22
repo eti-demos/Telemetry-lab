@@ -6,7 +6,7 @@ services:
       args:
         ENVOY_CONFIG: envoy-front-proxy.yaml
     networks:
-      - otel-envoy
+      - zipkin-envoy
     volumes:
       - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
@@ -26,7 +26,7 @@ services:
       args:
         ENVOY_CONFIG: envoy-1.yaml
     networks:
-      - otel-envoy
+      - zipkin-envoy
     volumes:
       - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
@@ -44,7 +44,7 @@ services:
       args:
         ENVOY_CONFIG: envoy-2.yaml
     networks:
-      - otel-envoy
+      - zipkin-envoy
     volumes:
       - ./wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
@@ -58,7 +58,7 @@ services:
       context: ../shared/python
       target: aiohttp-tracing-service
     networks:
-      - otel-envoy
+      - zipkin-envoy
     environment:
     - SERVICE_NAME=1
 
@@ -67,28 +67,28 @@ services:
       context: ../shared/python
       target: aiohttp-tracing-service
     networks:
-      - otel-envoy
+      - zipkin-envoy
     environment:
     - SERVICE_NAME=2
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.15
-    networks:
-      - otel-envoy
-    restart: on-failure
-    ports:
-      - "127.0.0.1:5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - XPACK_SECURITY_ENABLED=false
-      - INTERACTIVESETUP_ENABLED=false
-    depends_on:
-      - elasticsearch
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.17.15
+  #   networks:
+  #     - zipkin-envoy
+  #   restart: on-failure
+  #   ports:
+  #     - "127.0.0.1:5601:5601"
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - XPACK_SECURITY_ENABLED=false
+  #     - INTERACTIVESETUP_ENABLED=false
+  #   depends_on:
+  #     - elasticsearch
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
     networks:
-      - otel-envoy
+      - zipkin-envoy
     ports:
       - "127.0.0.1:9200:9200"
       - "127.0.0.1:9300:9300"
@@ -102,7 +102,7 @@ services:
       - xpack.security.enabled=false
       - INTERACTIVESETUP_ENABLED=false
     volumes:
-      - esenvoy:/usr/share/elasticsearch/data
+      - esenvoy-zipkin:/usr/share/elasticsearch/data
 
   jaeger-collector:
     image: jaegertracing/jaeger-collector
@@ -113,7 +113,7 @@ services:
       - "14250:14250"
       - "9411:9411"
     networks:
-      - otel-envoy
+      - zipkin-envoy
     restart: on-failure
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
@@ -122,6 +122,8 @@ services:
       - "--es.num-shards=1"
       - "--es.num-replicas=0"
       - "--log-level=error"
+      - "--collector.zipkin.host-port=:9411"
+      - "--collector.zipkin.keep-alive"
     depends_on:
       - elasticsearch
 
@@ -134,7 +136,7 @@ services:
       - "16686:16686"
       - "16687:16687"
     networks:
-      - otel-envoy
+      - zipkin-envoy
     restart: on-failure
     command: 
       - "--es.server-urls=http://elasticsearch:9200"
@@ -144,9 +146,9 @@ services:
       - elasticsearch
 
 volumes:
-  esenvoy:
+  esenvoy-zipkin:
     driver: local
 
 networks:
-  otel-envoy:
+  zipkin-envoy:
     driver: bridge
