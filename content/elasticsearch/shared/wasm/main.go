@@ -84,3 +84,15 @@ func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) typ
     return types.ActionContinue
 }
 
+func (h *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
+    hs, err := proxywasm.GetHttpResponseHeaders()
+    if err != nil {
+		proxywasm.LogCriticalf("failed to get response headers: %v", err)
+	}
+    for _, h := range hs {
+		proxywasm.LogInfof("response header --> %s: %s", h[0], h[1])
+	}
+
+    return types.ActionContinue
+}
+
