@@ -4,7 +4,7 @@ targets := $(wildcard *.yaml)
 
 all: run
 run: build
-	docker compose up
+	docker compose up --no-attach kibana
 
 build: .build.docker
 .build.docker: $(targets)
