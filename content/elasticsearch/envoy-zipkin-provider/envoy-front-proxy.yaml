@@ -28,7 +28,7 @@ static_resources:
               name: envoy.tracers.zipkin
               typed_config:
                 "@type": type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
-                collector_cluster: zipkin
+                collector_cluster: jaeger
                 collector_endpoint: "/api/v2/spans"
                 collector_endpoint_version: HTTP_JSON
           codec_type: AUTO
@@ -109,15 +109,28 @@ static_resources:
               socket_address:
                 address: envoy-1
                 port_value: 10001
-  - name: zipkin
+  # - name: zipkin
+  #   type: STRICT_DNS
+  #   lb_policy: ROUND_ROBIN
+  #   load_assignment:
+  #     cluster_name: zipkin
+  #     endpoints:
+  #     - lb_endpoints:
+  #       - endpoint:
+  #           address:
+  #             socket_address:
+  #               address: zipkin
+  #               port_value: 9411
+
+  - name: jaeger
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: zipkin
+      cluster_name: jaeger
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: zipkin
-                port_value: 9411
+                address: jaeger
+                port_value: 9412
