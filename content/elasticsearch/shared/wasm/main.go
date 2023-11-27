@@ -64,6 +64,16 @@ type httpContext struct{
 func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
     // spanID, err :=proxywasm.GetHttpRequestHeader("Number")
     // traceID, err :=proxywasm.GetHttpRequestHeader("Number")
+
+    err:= proxywasm.RemoveHttpRequestHeader("Api-Log-Id")
+    if err!=nil {
+		proxywasm.LogCriticalf("failed to remove Api-Log-Id headers: %v", err)
+    }
+    proxywasm.AddHttpRequestHeader("Api-Log-Id", h.apiLogId.String()) 
+
+    // ReplaceHttpRequestHeader
+    // GetHttpRequestHeader
+
     hs, err := proxywasm.GetHttpRequestHeaders()
     if err != nil {
 		proxywasm.LogCriticalf("failed to get request headers: %v", err)
@@ -71,20 +81,19 @@ func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) typ
     for _, h := range hs {
 		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
 	}
-    proxywasm.AddHttpRequestHeader("Api-Log-Id", httpContext.apiLogId.String()) 
 
     return types.ActionContinue
 }
 
-func (h *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
-    hs, err := proxywasm.GetHttpResponseHeaders()
-    if err != nil {
-		proxywasm.LogCriticalf("failed to get response headers: %v", err)
-	}
-    for _, h := range hs {
-		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
-	}
-
-    return types.ActionContinue
-}
+// func (h *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
+//     hs, err := proxywasm.GetHttpResponseHeaders()
+//     if err != nil {
+// 		proxywasm.LogCriticalf("failed to get response headers: %v", err)
+// 	}
+//     for _, h := range hs {
+// 		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
+// 	}
+//
+//     return types.ActionContinue
+// }
 
