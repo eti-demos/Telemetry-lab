@@ -61,6 +61,12 @@ services:
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes: 
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-
     ports:
     - "${PORT_UI:-55679}:55679"
+
+  jaeger:
+    image: jaegertracing/opentelemetry-all-in-one:latest
+    ports:
+      - "16686:16686" # api
+      - "4317:4317" # grpc
+
