@@ -19,6 +19,7 @@ import (
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+    "github.com/google/uuid"
 )
 
 const tickMilliseconds uint32 = 1000
@@ -47,12 +48,17 @@ type pluginContext struct {
 
 
 func (*pluginContext) NewHttpContext(uint32) types.HttpContext { 
-	proxywasm.LogWarnf("New HTTP Contxt is created")
-    return &httpContext{} 
+    
+    _apiLogId := uuid.New()
+	// proxywasm.LogWarnf("New HTTP Contxt is created")
+    return &httpContext{
+        apiLogId: _apiLogId,
+    } 
 }
 
 type httpContext struct{
     types.DefaultHttpContext
+    apiLogId uuid.UUID
 }
 
 func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -65,22 +71,8 @@ func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) typ
     for _, h := range hs {
 		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
 	}
+    proxywasm.AddHttpRequestHeader("Api-Log-Id", httpContext.apiLogId.String()) 
 
-    // if err != nil {
-    //     proxywasm.LogWarnf("Error while retriving the value of hearder Number")
-    //     return types.ActionContinue
-    // }
-    // proxywasm.LogWarnf("The Number header value is %s", number_str)
-    //
-    // number_int, _ := strconv.Atoi(number_str)
-    // proxywasm.RemoveHttpRequestHeader("Number")
-    // if number_int > 10 {
-    //     proxywasm.LogWarnf("Number is bigger then 10")
-    //     proxywasm.AddHttpRequestHeader("Number-Size", "big") 
-    // } else{
-    //     proxywasm.LogWarnf("Number is smaller then 10")
-    //     proxywasm.AddHttpRequestHeader("Number-Size", "small") 
-    // }
     return types.ActionContinue
 }
 
@@ -90,7 +82,7 @@ func (h *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) ty
 		proxywasm.LogCriticalf("failed to get response headers: %v", err)
 	}
     for _, h := range hs {
-		proxywasm.LogInfof("response header --> %s: %s", h[0], h[1])
+		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
 	}
 
     return types.ActionContinue
