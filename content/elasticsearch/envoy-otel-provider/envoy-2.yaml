@@ -16,6 +16,11 @@ static_resources:
           # Tracing configuration 
           # ---------------------
           tracing:
+            custom_tags:
+              - tag: API Log ID
+                request_header: 
+                  name: Api-Log-Id
+                  default_value: NaN
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
