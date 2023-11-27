@@ -8,7 +8,7 @@ services:
     networks:
       - otel-envoy
     volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
@@ -28,7 +28,7 @@ services:
     networks:
       - otel-envoy
     volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
@@ -46,7 +46,7 @@ services:
     networks:
       - otel-envoy
     volumes:
-      - ./wasm/main.wasm:/etc/wasm/main.wasm
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
       # jaeger:
       #   condition: service_healthy
@@ -121,7 +121,7 @@ services:
       - "--es.server-urls=http://elasticsearch:9200"
       - "--es.num-shards=1"
       - "--es.num-replicas=0"
-      - "--log-level=error"
+      # - "--log-level=error"
     depends_on:
       - elasticsearch
 
