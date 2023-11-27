@@ -1,13 +1,16 @@
 services:
-
   envoy-front-proxy:
     build:
       context: .
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-front-proxy.yaml
+    networks:
+      - otel-envoy
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # opentelemetry:
+      # jaeger:
       #   condition: service_healthy
       envoy-1:
         condition: service_started
@@ -15,11 +18,6 @@ services:
         condition: service_started
     ports:
     - "${PORT_PROXY:-10000}:10000"
-    volumes:
-      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
-    networks:
-      - otel-envoy
-
 
   envoy-1:
     build:
@@ -27,17 +25,17 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-1.yaml
+    networks:
+      - otel-envoy
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # opentelemetry:
+      # jaeger:
       #   condition: service_healthy
       service-1:
         condition: service_healthy
       envoy-2:
         condition: service_started
-    volumes:
-      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
-    networks:
-      - otel-envoy
 
   envoy-2:
     build:
@@ -45,49 +43,33 @@ services:
       dockerfile: ../shared/envoy/Dockerfile
       args:
         ENVOY_CONFIG: envoy-2.yaml
+    networks:
+      - otel-envoy
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
     depends_on:
-      # opentelemetry:
+      # jaeger:
       #   condition: service_healthy
       service-2:
         condition: service_healthy
-    volumes:
-      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
-    networks:
-      - otel-envoy
 
   service-1:
     build:
       context: ../shared/python
       target: aiohttp-tracing-service
-    environment:
-    - SERVICE_NAME=1
     networks:
       - otel-envoy
+    environment:
+    - SERVICE_NAME=1
 
   service-2:
     build:
       context: ../shared/python
       target: aiohttp-tracing-service
+    networks:
+      - otel-envoy
     environment:
     - SERVICE_NAME=2
-    networks:
-      - otel-envoy
-
-  opentelemetry:
-    image: otel/opentelemetry-collector:0.89.0
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes: 
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-    - "${PORT_UI:-55679}:55679"
-    networks:
-      - otel-envoy
-
-  # jaeger:
-  #   image: jaegertracing/opentelemetry-all-in-one:latest
-  #   ports:
-  #     - "16686:16686" # api
-  #     - "4317:4317" # grpc
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.15
@@ -124,12 +106,12 @@ services:
 
   jaeger-collector:
     image: jaegertracing/jaeger-collector
-    # ports:
-    #   - "14269:14269"
-    #   - "14268:14268"
-    #   - "14267:14267"
-    #   - "14250:14250"
-    #   - "9411:9411"
+    ports:
+      - "14269:14269"
+      - "14268:14268"
+      - "14267:14267"
+      - "14250:14250"
+      - "9411:9411"
     networks:
       - otel-envoy
     restart: on-failure

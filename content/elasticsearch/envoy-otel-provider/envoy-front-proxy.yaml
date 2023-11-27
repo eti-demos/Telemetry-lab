@@ -32,7 +32,7 @@ static_resources:
                 "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpc_service:
                   envoy_grpc:
-                    cluster_name: jaeger-collector
+                    cluster_name: opentelemetry_collector
                   timeout: 0.250s
                 service_name: front-envoy
           codec_type: AUTO
@@ -109,7 +109,7 @@ static_resources:
               socket_address:
                 address: envoy-1
                 port_value: 10001
-  - name: jaeger-collector
+  - name: opentelemetry_collector
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -118,11 +118,11 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: jaeger-collector
+      cluster_name: opentelemetry_collector
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: jaeger-collector
+                address: opentelemetry
                 port_value: 4317

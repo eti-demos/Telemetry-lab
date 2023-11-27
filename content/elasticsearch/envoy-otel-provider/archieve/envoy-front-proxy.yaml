@@ -1,4 +1,7 @@
-# This proxy listens on port 10000 and routes all queries to `service-2`.
+# This proxy listens on port 10000, and routes the following paths:
+#
+#   /trace/1 -> routes to `envoy-1` on port 10000
+#   /trace/2 -> routes to `envoy-1` on port 10001 (for onward routing to `envoy-2`)
 
 static_resources:
   listeners:
@@ -6,12 +9,14 @@ static_resources:
       socket_address:
         address: 0.0.0.0
         port_value: 10000
-    traffic_direction: INBOUND
+    traffic_direction: OUTBOUND
     filter_chains:
     - filters:
+      # HTTP Connection manager
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          generate_request_id: true
           # ---------------------
           # Tracing configuration 
           # ---------------------
@@ -27,9 +32,9 @@ static_resources:
                 "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpc_service:
                   envoy_grpc:
-                    cluster_name: opentelemetry_collector
+                    cluster_name: jaeger-collector
                   timeout: 0.250s
-                service_name: envoy-2
+                service_name: front-envoy
           codec_type: AUTO
           stat_prefix: ingress_http
           # -------------------
@@ -60,33 +65,51 @@ static_resources:
           # Routing config
           # --------------
           route_config:
-            name: service2_route
+            name: proxy_routes
             virtual_hosts:
-            - name: service2
+            - name: proxy
               domains:
               - "*"
               routes:
               - match:
-                  prefix: "/"
+                  prefix: "/trace/1"
                 route:
-                  cluster: service_cluster2
+                  cluster: envoy_cluster1
                 decorator:
-                  operation: routeToService2
+                  operation: routeToEnvoy1
+              - match:
+                  prefix: "/trace/2"
+                route:
+                  cluster: envoy_cluster2
+                decorator:
+                  operation: routeToEnvoy2ViaEnvoy1
 
   clusters:
-  - name: service_cluster2
+  - name: envoy_cluster1
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: service_cluster2
+      cluster_name: envoy_cluster1
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: service-2
-                port_value: 8080
-  - name: opentelemetry_collector
+                address: envoy-1
+                port_value: 10000
+  - name: envoy_cluster2
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: envoy_cluster2
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: envoy-1
+                port_value: 10001
+  - name: jaeger-collector
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -95,11 +118,11 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: opentelemetry_collector
+      cluster_name: jaeger-collector
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: opentelemetry
+                address: jaeger-collector
                 port_value: 4317
