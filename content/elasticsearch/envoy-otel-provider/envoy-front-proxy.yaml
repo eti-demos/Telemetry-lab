@@ -12,11 +12,20 @@ static_resources:
     traffic_direction: OUTBOUND
     filter_chains:
     - filters:
+      # HTTP Connection manager
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           generate_request_id: true
+          # ---------------------
+          # Tracing configuration 
+          # ---------------------
           tracing:
+            custom_tags:
+              - tag: API Log ID
+                request_header: 
+                  name: Api-Log-Id
+                  default_value: NaN
             provider:
               name: envoy.tracers.opentelemetry
               typed_config:
@@ -28,10 +37,33 @@ static_resources:
                 service_name: front-envoy
           codec_type: AUTO
           stat_prefix: ingress_http
+          # -------------------
+          # HTTP filters chain 
+          # -------------------
           http_filters:
+          # ----------
+          # WASM filter
+          # -----------
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              value:
+                config:
+                  vm_config:
+                    runtime: "envoy.wasm.runtime.v8"
+                    code:
+                      local:
+                        filename: "/etc/wasm/main.wasm"
+          # --------------
+          # Routing filter
+          # --------------
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          # --------------
+          # Routing config
+          # --------------
           route_config:
             name: proxy_routes
             virtual_hosts:
