@@ -15,12 +15,13 @@
 package main
 
 import (
-    // "strconv"
-
+    "strconv"
+    "fmt"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
     "github.com/google/uuid"
 )
+
 
 const tickMilliseconds uint32 = 1000
 
@@ -48,20 +49,27 @@ type pluginContext struct {
 
 
 func (*pluginContext) NewHttpContext(uint32) types.HttpContext { 
-    
     _apiLogId := uuid.New()
 	// proxywasm.LogWarnf("New HTTP Contxt is created")
     return &httpContext{
-        apiLogId: _apiLogId,
+        Telemetry: Telemetry{
+			apiLogId: _apiLogId,
+        },
     } 
 }
 
 type httpContext struct{
     types.DefaultHttpContext
-    apiLogId uuid.UUID
+    Telemetry
 }
 
-func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+type Telemetry struct {
+    apiLogId uuid.UUID
+    Depth       int         `json:"depth, omitempty"`
+    RequestID   string      `json:"requestID,omitempty"`
+}
+
+func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
     // spanID, err :=proxywasm.GetHttpRequestHeader("Number")
     // traceID, err :=proxywasm.GetHttpRequestHeader("Number")
 
@@ -69,31 +77,110 @@ func (h *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) typ
     if err!=nil {
 		proxywasm.LogCriticalf("failed to remove Api-Log-Id headers: %v", err)
     }
-    proxywasm.AddHttpRequestHeader("Api-Log-Id", h.apiLogId.String()) 
+    proxywasm.AddHttpRequestHeader("Api-Log-Id", ctx.apiLogId.String()) 
+
+
+    depth, err:= proxywasm.GetHttpRequestHeader("Depth")
+
+    if err!=nil {
+		proxywasm.LogCriticalf("failed to get Depth headers: %v", err)
+        proxywasm.AddHttpRequestHeader("Depth", "0") 
+        
+    }else {
+        depth, err := strconv.Atoi(depth)
+        if err!= nil{
+            proxywasm.LogCriticalf("Depth headers isn't a number")
+        }
+        depth++
+        proxywasm.ReplaceHttpRequestHeader("Depth", strconv.Itoa(depth))
+        ctx.Telemetry.Depth = depth
+    }
+
+    if ctx.Telemetry.RequestID == "" {
+        xRequestID, err := proxywasm.GetHttpRequestHeader("x-request-id")
+		if err != nil {
+			proxywasm.LogWarnf("Failed to get x-request-id header: %v", err)
+		}
+		ctx.Telemetry.RequestID = xRequestID
+	}
 
     // ReplaceHttpRequestHeader
     // GetHttpRequestHeader
 
-    hs, err := proxywasm.GetHttpRequestHeaders()
-    if err != nil {
-		proxywasm.LogCriticalf("failed to get request headers: %v", err)
-	}
-    for _, h := range hs {
-		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
-	}
-
+ //    hs, err := proxywasm.GetHttpRequestHeaders()
+ //    if err != nil {
+	// 	proxywasm.LogCriticalf("failed to get request headers: %v", err)
+	// }
+ //    for _, h := range hs {
+	// 	proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
+	// }
+	//
     return types.ActionContinue
 }
 
-// func (h *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
-//     hs, err := proxywasm.GetHttpResponseHeaders()
-//     if err != nil {
-// 		proxywasm.LogCriticalf("failed to get response headers: %v", err)
-// 	}
-//     for _, h := range hs {
-// 		proxywasm.LogInfof("response header <-- %s: %s", h[0], h[1])
-// 	}
-//
-//     return types.ActionContinue
-// }
+
+
+
+func (ctx *httpContext) OnHttpStreamDone() {
+
+	proxywasm.LogInfof("Telemetry dispatched")
+
+	// if err := sendAuthPayload(&ctx.Telemetry, ctx.serverAddress); err != nil {
+	if err := sendAuthPayload(&ctx.Telemetry, "elasticsearch"); err != nil {
+		proxywasm.LogErrorf("Failed to send payload. %v", err)
+	}
+}
+
+const jsonPayload string = `{"requestID":"%v","scheme":"%v", "Api-Log-Id": "%v"}`
+
+
+var emptyTrailers = [][2]string{}
+
+const (
+	httpCallTimeoutMs = 15000
+	// MaxBodySize       = 1000 * 1000
+)
+const (
+	statusCodePseudoHeaderName        = ":status"
+	// contentTypeHeaderName             = "content-type"
+	// defaultServiceMesh                = "istio"
+)
+
+
+
+func sendAuthPayload(payload *Telemetry, clusterName string) error {
+
+    body := fmt.Sprintf(jsonPayload,
+		payload.RequestID, payloajd.Depth, payload.apiLogId)
+
+
+    asHeader := [][2]string{{":method", "POST"}, {":authority", "apiclarity"},
+        {":path", "/api-traffic-log/_doc"}, {"accept", "*/*"}, {"Content-Type",
+            "application/json"}, {"x-request-id", payload.RequestID}}
+
+    _, err := proxywasm.DispatchHttpCall(clusterName, asHeader, []byte(body),
+        emptyTrailers, httpCallTimeoutMs, httpCallResponseCallback); 
+
+    if err != nil {
+        proxywasm.LogErrorf("Dispatch httpcall failed. %v", err) 
+        return err 
+    }
+
+	proxywasm.LogInfof("Telemetry dispatched")
+	return nil
+}
+
+func httpCallResponseCallback(numHeaders, bodySize, numTrailers int) {
+	proxywasm.LogDebugf("httpCallResponseCallback. numHeaders: %v, bodySize: %v, numTrailers: %v", numHeaders, bodySize, numTrailers)
+	headers, err := proxywasm.GetHttpCallResponseHeaders()
+	if err != nil {
+		proxywasm.LogWarnf("Failed to get http call response headers. %v", err)
+		return
+	}
+	for _, header := range headers {
+		if header[0] == statusCodePseudoHeaderName {
+			proxywasm.LogDebugf("Got response status from trace server: %v", header[1])
+		}
+	}
+}
 
