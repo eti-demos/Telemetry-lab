@@ -14,6 +14,26 @@ Note: jaeger hasn't support elastic search 8 yet now (2023, Dec)
 using the latest version of elastic7. 
 
 
+Remark, 
+Once the a doc is created, the type of value of a key is important. 
+Eg: if there is a doc like this 
+```json
+{
+    "id": 12313
+}
+```
+
+"id" has to be long type.
+
+If I want to submit
+```json
+{
+    "id": "my-id-nub"
+}
+```
+it occur be some parsing error.
+
+
 ## kibana queries
 ```
 GET /_cat/indices
@@ -24,6 +44,15 @@ GET jaeger-span-2023-11-20/_search
         "match_all": {}
     }
 }
+
+```
+It works the following command 
+```console 
+curl -XPOST -H "Content-Type: application/json" localhost:9200/api-traffic-log/_doc -d '
+{
+    "apilogid": 123,
+    "depth": 5
+}'
 ```
 
 # OpenTel setup 
