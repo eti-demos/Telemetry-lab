@@ -107,14 +107,14 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
     // ReplaceHttpRequestHeader
     // GetHttpRequestHeader
 
- //    hs, err := proxywasm.GetHttpRequestHeaders()
- //    if err != nil {
-	// 	proxywasm.LogCriticalf("failed to get request headers: %v", err)
-	// }
- //    for _, h := range hs {
-	// 	proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
-	// }
-	//
+    hs, err := proxywasm.GetHttpRequestHeaders()
+    if err != nil {
+		proxywasm.LogCriticalf("failed to get request headers: %v", err)
+	}
+    for _, h := range hs {
+		proxywasm.LogInfof("request header --> %s: %s", h[0], h[1])
+	}
+
     return types.ActionContinue
 }
 

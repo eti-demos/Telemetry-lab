@@ -4,7 +4,7 @@ targets := $(wildcard *.yaml)
 
 all: run
 run: build
-	docker compose up --no-attach kibana --no-attach elasticsearch --no-attach service-1 --no-attach service-2 --no-attach opentelemetry --no-attach jaeger-collector --no-attach jaeger-query
+	docker compose up --no-attach kibana --no-attach elasticsearch --no-attach service-1 --no-attach service-2  --no-attach jaeger-collector --no-attach jaeger-query
 
 build: .build.docker
 .build.docker: $(targets)
