@@ -1,5 +1,5 @@
 # Trace data merging
-(Notice: the working directory is `03-elasticsearch`) 
+(Notice: the working directory is `03-elasticsearch/envoy-otel-provider`) 
 
 The goal of this lab is to know whether it is possible to build customized 
 tracing on top of existing solutions such as OpenTelemetry and Jaeger. In the
