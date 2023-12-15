@@ -65,7 +65,7 @@ Here is the some examples of gRPC queries.
 
 
 
-## All in one demo
+## Demonstration
 The setup is forked from the
 [tracing-demo](https://github.com/Domoryonok/tracing_demo) just with verly
 little modification the main goal of the tracing-demo is to show how to
@@ -75,15 +75,29 @@ article](https://medium.com/adevinta-tech-blog/distributed-tracing-with-opentele
 or in the [explain_lab.md](./content/jaeger-query-grpc/explain_lab.md).
 
 
-### Prerequest 
+### prerequisite
 ```
-(some)
 pip install requirement.txt 
 ```
 
 The main goal of this section is to understand the gRPC proto. 
 
+### Demo 
+Attention: the working directory for this Demo is `01-jaeger-query-grpc`
 
+#### Lauching docker-compose
+```
+docker compose up 
+```
+
+#### Sending a few requests
+```
+curl http://localhost:8001/articles/v1/?with_suggested=1
+curl http://localhost:8001/articles/v1/ | jq
+```
+
+#### Checking gRPC endpoints of jaeger-query 
+(Notice: jaeger UI is running as well on the `localhost:16686`)
 **GetServices**
 ```
 grpcurl -plaintext -proto jaeger_query_proto/query.proto -import-path ./jaeger_query_proto 127.0.0.1:16685 jaeger.api_v2.QueryService/GetServices
