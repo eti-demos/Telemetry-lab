@@ -1,0 +1,170 @@
+services:
+
+  envoy-front-proxy:
+    build:
+      context: .
+      dockerfile: ../shared/envoy/Dockerfile
+      args:
+        ENVOY_CONFIG: envoy-front-proxy.yaml
+    depends_on:
+      # opentelemetry:
+      #   condition: service_healthy
+      envoy-1:
+        condition: service_started
+      envoy-2:
+        condition: service_started
+    ports:
+    - "${PORT_PROXY:-10000}:10000"
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
+    networks:
+      - otel-envoy
+
+
+  envoy-1:
+    build:
+      context: .
+      dockerfile: ../shared/envoy/Dockerfile
+      args:
+        ENVOY_CONFIG: envoy-1.yaml
+    depends_on:
+      # opentelemetry:
+      #   condition: service_healthy
+      service-1:
+        condition: service_healthy
+      envoy-2:
+        condition: service_started
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
+    networks:
+      - otel-envoy
+
+  envoy-2:
+    build:
+      context: .
+      dockerfile: ../shared/envoy/Dockerfile
+      args:
+        ENVOY_CONFIG: envoy-2.yaml
+    depends_on:
+      # opentelemetry:
+      #   condition: service_healthy
+      service-2:
+        condition: service_healthy
+    volumes:
+      - ../shared/wasm/main.wasm:/etc/wasm/main.wasm
+    networks:
+      - otel-envoy
+
+  service-1:
+    build:
+      context: ../shared/python
+      target: aiohttp-tracing-service
+    environment:
+    - SERVICE_NAME=1
+    networks:
+      - otel-envoy
+
+  service-2:
+    build:
+      context: ../shared/python
+      target: aiohttp-tracing-service
+    environment:
+    - SERVICE_NAME=2
+    networks:
+      - otel-envoy
+
+  opentelemetry:
+    image: otel/opentelemetry-collector:0.89.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes: 
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+    - "${PORT_UI:-55679}:55679"
+    networks:
+      - otel-envoy
+
+  # jaeger:
+  #   image: jaegertracing/opentelemetry-all-in-one:latest
+  #   ports:
+  #     - "16686:16686" # api
+  #     - "4317:4317" # grpc
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.15
+    networks:
+      - otel-envoy
+    restart: on-failure
+    ports:
+      - "127.0.0.1:5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+      - INTERACTIVESETUP_ENABLED=false
+    depends_on:
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    networks:
+      - otel-envoy
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9300"
+    restart: on-failure
+    environment:
+      - cluster.name=jaeger-cluster
+      - discovery.type=single-node
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - INTERACTIVESETUP_ENABLED=false
+    volumes:
+      - esenvoy:/usr/share/elasticsearch/data
+
+  jaeger-collector:
+    image: jaegertracing/jaeger-collector
+    # ports:
+    #   - "14269:14269"
+    #   - "14268:14268"
+    #   - "14267:14267"
+    #   - "14250:14250"
+    #   - "9411:9411"
+    networks:
+      - otel-envoy
+    restart: on-failure
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--es.num-shards=1"
+      - "--es.num-replicas=0"
+      # - "--log-level=error"
+    depends_on:
+      - elasticsearch
+
+  jaeger-query:
+    image: jaegertracing/jaeger-query
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - no_proxy=localhost
+    ports:
+      - "16686:16686"
+      - "16687:16687"
+    networks:
+      - otel-envoy
+    restart: on-failure
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--span-storage.type=elasticsearch"
+    
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esenvoy:
+    driver: local
+
+networks:
+  otel-envoy:
+    driver: bridge

@@ -1,0 +1,105 @@
+version: "3"
+
+services:
+  suggestions-microservice:
+    build: ./apps/suggestions/.
+    env_file:
+      - ./apps/suggestions/.env.docker
+    ports:
+      - "8002:8002"
+    networks:
+      - net-elasticsearch
+
+  articles-microservice:
+    build: ./apps/articles/.
+    env_file:
+      - ./apps/articles/.env.docker
+    ports:
+      - "8001:8001"
+    networks: 
+      - net-elasticsearch
+    depends_on:
+      - suggestions-microservice
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.15
+    networks:
+      - net-elasticsearch
+    restart: on-failure
+    ports:
+      - "127.0.0.1:5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+      - INTERACTIVESETUP_ENABLED=false
+    depends_on:
+      - elasticsearch
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    networks:
+      - net-elasticsearch
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9300"
+    restart: on-failure
+    environment:
+      - cluster.name=jaeger-cluster
+      - discovery.type=single-node
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - INTERACTIVESETUP_ENABLED=false
+    volumes:
+      - essdk:/usr/share/elasticsearch/data
+
+  jaeger-collector:
+    image: jaegertracing/jaeger-collector
+    ports:
+      - "14269:14269"
+      - "14268:14268"
+      - "14267:14267"
+      - "14250:14250"
+      - "9411:9411"
+    networks:
+      - net-elasticsearch
+    restart: on-failure
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--es.num-shards=1"
+      - "--es.num-replicas=0"
+      - "--log-level=error"
+    depends_on:
+      - elasticsearch
+
+  jaeger-query:
+    image: jaegertracing/jaeger-query
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - no_proxy=localhost
+    ports:
+      - "16686:16686"
+      - "16687:16687"
+    networks:
+      - net-elasticsearch
+    restart: on-failure
+    command: 
+      - "--es.server-urls=http://elasticsearch:9200"
+      - "--span-storage.type=elasticsearch"
+    
+    depends_on:
+      - elasticsearch
+
+volumes:
+  essdk:
+    driver: local
+
+networks:
+  net-elasticsearch:
+    driver: bridge 
+
+
